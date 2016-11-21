@@ -21,7 +21,7 @@ class ViewController: NSViewController {
         self.paneDefault?.tabsBar?.style = DefaultStyle()
         
         let tab2Menu = NSMenu()
-        tab2Menu.addItem(withTitle: "Action 1", action: nil, keyEquivalent: "")
+        tab2Menu.addItem(withTitle: "Action 1", action: #selector(ViewController.addTabItem), keyEquivalent: "")
         tab2Menu.addItem(withTitle: "Action 2", action: nil, keyEquivalent: "")
 
         self.paneDefault?.items = [Item(title: "Default 1", icon: NSImage(named: "Star"), menu: nil, altIcon: nil, selectable: false),
@@ -55,6 +55,13 @@ class ViewController: NSViewController {
         
         self.paneChrome?.tabsBar?.selectItemAtIndex(3)
         self.paneSafari?.tabsBar?.selectItemAtIndex(1)
+    }
+
+    func addTabItem() {
+        let title = "Tab Item #\(paneDefault!.items.count + 1)"
+        print("add tab item \(title)...")
+        paneDefault?.items.append(Item(title: title, icon: nil, menu: nil, altIcon: nil))
+        paneDefault?.tabsBar?.reloadTabs()
     }
 }
 

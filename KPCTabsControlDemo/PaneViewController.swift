@@ -61,6 +61,7 @@ class PaneViewController: NSViewController, TabsControlDataSource, TabsControlDe
     }
     
     func tabsControl(_ control: TabsControl, itemAtIndex index: Int) -> AnyObject {
+        print("item at index \(index) is \(items[index].title)")
         return self.items[index]
     }
     
