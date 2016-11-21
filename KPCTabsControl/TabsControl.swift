@@ -171,6 +171,7 @@ open class TabsControl: NSControl, NSTextDelegate {
             button.style = self.style
 
             button.title = dataSource.tabsControl(self, titleForItem: item)
+            Swift.print("title for button at \(i)=\(button.title)")
             
             if let img = dataSource.tabsControl?(self, iconForItem: item) {
                 button.icon = img
@@ -213,8 +214,11 @@ open class TabsControl: NSControl, NSTextDelegate {
 
         var buttonX = CGFloat(0)
         for (index, button) in tabButtons.enumerated() {
-            
+
+            Swift.print("buttonX at \(index)=\(buttonX) \(button.title)")
+
             let offset = self.style.tabButtonOffset(position: button.buttonPosition)
+            Swift.print("offset at \(index)=\(offset)")
             let buttonFrame = CGRect(x: buttonX + offset.x, y: offset.y, width: buttonWidth, height: buttonHeight)
             buttonX += buttonWidth + offset.x
 
@@ -580,6 +584,6 @@ open class TabsControl: NSControl, NSTextDelegate {
     
     fileprivate var tabButtons: [TabButton] {
         guard let tabsView = self.tabsView else { return [] }
-        return tabsView.subviews.flatMap({ $0 as? TabButton }).sorted(by: { $0.frame.minX < $1.frame.minX})
+        return tabsView.subviews.flatMap({ $0 as? TabButton }) // .sorted(by: { $0.frame.minX < $1.frame.minX})
     }
 }
