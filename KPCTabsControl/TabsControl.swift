@@ -11,7 +11,7 @@ import AppKit
 /// TabsControl is the main class of the library, and is designed to suffice for implementing tabs in your app.
 /// The only necessary thing for it to work is an implementation of its `dataSource`.
 open class TabsControl: NSControl, NSTextDelegate {
-    
+
     fileprivate var ScrollViewObservationContext: UnsafeMutableRawPointer? = nil // hm, wrong?
     fileprivate var delegateInterceptor = MessageInterceptor()
 
@@ -30,16 +30,16 @@ open class TabsControl: NSControl, NSTextDelegate {
     }
 
     // MARK: - Data Source & Delegate
-    
+
     /// The dataSource of the tabs control, providing all the necessary information for the class to build the tabs.
     @IBOutlet open weak var dataSource: TabsControlDataSource?
-    
+
     /// The delegate of the tabs control, providing additional possibilities for customization and precise behavior.
     @IBOutlet open weak var delegate: TabsControlDelegate? {
         get { return self.delegateInterceptor.receiver as? TabsControlDelegate }
         set { self.delegateInterceptor.receiver = newValue as? NSObject }
     }
-    
+
     // MARK: - Styling
 
     open var style: Style = DefaultStyle() {
@@ -51,24 +51,24 @@ open class TabsControl: NSControl, NSTextDelegate {
     }
 
     // MARK: - Initializers & Setup
-    
+
     public required init?(coder: NSCoder) {
         super.init(coder: coder)
         self.setup()
     }
-    
+
     public override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         self.setup()
     }
-    
+
     fileprivate func setup() {
         self.wantsLayer = true
         self.translatesAutoresizingMaskIntoConstraints = false
         self.cell = TabsControlCell(textCell: "")
         self.configureSubviews()
     }
-    
+
     fileprivate func configureSubviews() {
         self.scrollView = NSScrollView(frame: self.bounds)
         self.scrollView.drawsBackground = false
@@ -79,30 +79,30 @@ open class TabsControl: NSControl, NSTextDelegate {
         self.scrollView.verticalScrollElasticity = .none
         self.scrollView.autoresizingMask = [.viewWidthSizable, .viewHeightSizable]
         self.scrollView.translatesAutoresizingMaskIntoConstraints = true
-        
+
         self.tabsView = NSView(frame: self.scrollView.bounds)
         self.scrollView.documentView = self.tabsView
-        
+
         self.addSubview(self.scrollView)
-        
+
         if self.hideScrollButtons == false {
             self.scrollLeftButton = NSButton.auxiliaryButton(withImageNamed: "KPCTabLeftTemplate",
                                                              target: self,
                                                              action: #selector(TabsControl.scrollTabView(_:)))
-            
+
             self.scrollRightButton = NSButton.auxiliaryButton(withImageNamed: "KPCTabRightTemplate",
                                                               target: self,
                                                               action: #selector(TabsControl.scrollTabView(_:)))
-            
+
             self.scrollLeftButton?.autoresizingMask = .viewMinXMargin
             self.scrollLeftButton?.autoresizingMask = .viewMinXMargin
-            
+
             let leftCell = self.scrollLeftButton!.cell as! TabButtonCell
             leftCell.buttonPosition = .first
 
             self.addSubview(self.scrollLeftButton!)
             self.addSubview(self.scrollRightButton!)
-            
+
             // This is typically what's autolayout is supposed to help avoiding.
             // But for pixel-control freaking guys like me, I see no escape.
             var r = CGRect.zero
@@ -113,40 +113,40 @@ open class TabsControl: NSControl, NSTextDelegate {
             r.origin.x -= r.size.width;
             self.scrollLeftButton!.frame = r;
         }
-        
+
         self.startObservingScrollView()
         self.updateAuxiliaryButtons()
     }
-    
+
     deinit {
         self.stopObservingScrollView()
     }
-    
+
     // MARK: - Public Overrides
 
     open override func menu(for event: NSEvent) -> NSMenu? {
         return nil
     }
-    
+
     // MARK: - Data Source
-    
+
     /**
      Reloads all tabs of the tabs control. Used when the `dataSource` has changed for instance.
      */
     open func reloadTabs() {
         guard let dataSource = self.dataSource else { return }
-                
+
         let oldItemsCount = self.tabButtons.count
         let newItemsCount = dataSource.tabsControlNumberOfTabs(self)
-        
+
         if newItemsCount < oldItemsCount {
             self.tabButtons.filter({ $0.index >= newItemsCount }).forEach({ $0.removeFromSuperview() })
         }
-        
+
         var tabButtons = self.tabButtons
         for i in 0..<newItemsCount {
             let item = dataSource.tabsControl(self, itemAtIndex: i)
-            
+
             var button : TabButton
             if i >= oldItemsCount {
                 button = TabButton(index: i,
@@ -154,7 +154,7 @@ open class TabsControl: NSControl, NSTextDelegate {
                                    target: self,
                                    action: #selector(TabsControl.selectTab(_:)),
                                    style: self.style)
-                
+
                 button.wantsLayer = true
                 button.state = NSOffState
                 self.tabsView.addSubview(button)
@@ -162,17 +162,16 @@ open class TabsControl: NSControl, NSTextDelegate {
             else {
                 button = tabButtons[i]
             }
-            
+
             button.index = i
             button.item = item
-            
+
             button.editable = self.delegate?.tabsControl?(self, canEditTitleOfItem: item) == true
             button.buttonPosition = TabPosition.fromIndex(i, totalCount: newItemsCount)
             button.style = self.style
 
             button.title = dataSource.tabsControl(self, titleForItem: item)
-            Swift.print("title for button at \(i)=\(button.title)")
-            
+
             if let img = dataSource.tabsControl?(self, iconForItem: item) {
                 button.icon = img
             }
@@ -181,14 +180,14 @@ open class TabsControl: NSControl, NSTextDelegate {
             }
             if let altIcon = dataSource.tabsControl?(self, titleAlternativeIconForItem: item) {
                 button.alternativeTitleIcon = altIcon
-            }            
+            }
         }
-        
+
         self.layoutTabButtons(nil, animated: false)
         self.updateAuxiliaryButtons()
         self.invalidateRestorableState()
     }
-    
+
     // MARK: - Layout
 
     fileprivate func updateTabs(animated: Bool = false) {
@@ -200,7 +199,7 @@ open class TabsControl: NSControl, NSTextDelegate {
     fileprivate func layoutTabButtons(_ buttons: [TabButton]?, animated: Bool) {
         let tabButtons = buttons ?? self.tabButtons
         var tabsViewWidth = CGFloat(0.0)
-        
+
         let fullWidth = self.scrollView.frame.width / CGFloat(tabButtons.count)
         let buttonHeight = self.tabsView.frame.height
 
@@ -215,10 +214,7 @@ open class TabsControl: NSControl, NSTextDelegate {
         var buttonX = CGFloat(0)
         for (index, button) in tabButtons.enumerated() {
 
-            Swift.print("buttonX at \(index)=\(buttonX) \(button.title)")
-
             let offset = self.style.tabButtonOffset(position: button.buttonPosition)
-            Swift.print("offset at \(index)=\(offset)")
             let buttonFrame = CGRect(x: buttonX + offset.x, y: offset.y, width: buttonWidth, height: buttonHeight)
             buttonX += buttonWidth + offset.x
 
@@ -229,7 +225,7 @@ open class TabsControl: NSControl, NSTextDelegate {
             } else {
                 button.frame = buttonFrame
             }
-            
+
             if let selectable = self.delegate?.tabsControl?(self, canSelectItem: button.representedObject!) {
                 button.isEnabled = selectable
             }
@@ -245,14 +241,14 @@ open class TabsControl: NSControl, NSTextDelegate {
             self.tabsView.frame = viewFrame
         }
     }
-    
+
     fileprivate func updateAuxiliaryButtons() {
         let contentView = self.scrollView.contentView
         let showScrollButtons = (contentView.subviews.count > 0) && (NSMaxX(contentView.subviews[0].frame) > NSWidth(contentView.bounds))
-        
+
         self.scrollLeftButton?.isHidden = !showScrollButtons
         self.scrollRightButton?.isHidden = !showScrollButtons
-        
+
         if showScrollButtons == true {
             self.scrollLeftButton?.isEnabled = self.visibilityCondition(forButton: self.scrollLeftButton!, forLeftHandSide: true)
             self.scrollRightButton?.isEnabled = self.visibilityCondition(forButton: self.scrollRightButton!, forLeftHandSide: false)
@@ -260,27 +256,27 @@ open class TabsControl: NSControl, NSTextDelegate {
     }
 
     // MARK: - ScrollView Observation
-    
+
     fileprivate func startObservingScrollView() {
         // TODO replace this with scroll view change notifications
         self.scrollView.addObserver(self, forKeyPath: "frame", options: .new, context: &ScrollViewObservationContext)
         self.scrollView.addObserver(self, forKeyPath: "documentView.frame", options: .new, context: &ScrollViewObservationContext)
-        
+
         NotificationCenter.default.addObserver(self,
                                                          selector: #selector(TabsControl.scrollViewDidScroll(_:)),
                                                          name: NSNotification.Name.NSViewFrameDidChange,
                                                          object: self.scrollView)
     }
-    
+
     fileprivate func stopObservingScrollView() {
         self.scrollView.removeObserver(self, forKeyPath: "frame", context: &ScrollViewObservationContext)
         self.scrollView.removeObserver(self, forKeyPath: "documentView.frame", context: &ScrollViewObservationContext)
-        
+
         NotificationCenter.default.removeObserver(self,
                                                             name: NSNotification.Name.NSViewFrameDidChange,
                                                             object: self.scrollView)
     }
-    
+
     open override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if context == &ScrollViewObservationContext {
             self.updateAuxiliaryButtons()
@@ -289,18 +285,18 @@ open class TabsControl: NSControl, NSTextDelegate {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
-    
+
     @objc fileprivate func scrollViewDidScroll(_ notification: Notification) {
         self.layoutTabButtons(nil, animated: false)
         self.updateAuxiliaryButtons()
         self.invalidateRestorableState()
     }
-    
+
     // MARK: - Actions
-    
+
     @objc fileprivate func scrollTabView(_ sender: AnyObject?) {
         let forLeft = (sender as? NSButton == self.scrollLeftButton)
-            
+
         guard let tab = self.tabButtons.findFirst({ self.visibilityCondition(forButton: $0, forLeftHandSide: forLeft) })
             else { return }
 
@@ -311,7 +307,7 @@ open class TabsControl: NSControl, NSTextDelegate {
                 self.invalidateRestorableState()
         })
     }
-    
+
     fileprivate func visibilityCondition(forButton button: NSButton, forLeftHandSide: Bool) -> Bool {
         let visibleRect = self.tabsView.visibleRect
         if forLeftHandSide == true {
@@ -321,9 +317,9 @@ open class TabsControl: NSControl, NSTextDelegate {
             return NSMaxX(button.frame) > NSMaxX(visibleRect) - 2.0*NSWidth(self.scrollLeftButton!.frame)
         }
     }
-    
+
     // MARK: - Reordering
-    
+
     fileprivate func reorderTab(_ tab: TabButton, withEvent event: NSEvent) {
         var orderedTabs = self.tabButtons
         let tabX = NSMinX(tab.frame)
@@ -331,7 +327,7 @@ open class TabsControl: NSControl, NSTextDelegate {
 
         var prevPoint = dragPoint
         var reordered = false
-        
+
         let draggingTab = tab.copy() as! TabButton
         self.addSubview(draggingTab)
         tab.isHidden = true
@@ -340,7 +336,7 @@ open class TabsControl: NSControl, NSTextDelegate {
         while(true) {
             let mask: Int = Int(NSEventMask.leftMouseUp.union(.leftMouseDragged).rawValue)
             let event: NSEvent! = self.window?.nextEvent(matching: NSEventMask(rawValue: UInt64(mask)))
-            
+
             if event.type == NSEventType.leftMouseUp {
                 NSAnimationContext.current().completionHandler = {
                     draggingTab.removeFromSuperview()
@@ -358,20 +354,20 @@ open class TabsControl: NSControl, NSTextDelegate {
                 draggingTab.animator().frame = tab.frame
                 break
             }
-            
+
             let nextPoint = self.tabsView.convert(event.locationInWindow, from: nil)
             let nextX = tabX + (nextPoint.x - dragPoint.x)
-            
+
             var r = draggingTab.frame
             r.origin.x = nextX
             draggingTab.frame = r
-            
+
             let movingLeft = (nextPoint.x < prevPoint.x)
             prevPoint = nextPoint
-            
+
             let primaryIndex = orderedTabs.index(of: tab)!
             var secondaryIndex : Int?
-            
+
             if movingLeft == true && NSMidX(draggingTab.frame) < NSMinX(tab.frame) && tab !== orderedTabs.first! {
                 // shift left
                 secondaryIndex = primaryIndex-1
@@ -379,14 +375,14 @@ open class TabsControl: NSControl, NSTextDelegate {
             else if movingLeft == false && NSMidX(draggingTab.frame) > NSMaxX(tab.frame) && tab != orderedTabs.last! {
                 secondaryIndex = primaryIndex+1
             }
-            
+
             if let secondIndex = secondaryIndex {
                 swap(&orderedTabs[primaryIndex], &orderedTabs[secondIndex])
-                
+
                 // Shouldn't indexes be swapped too????? But if we do so, it doesn't work!
                 orderedTabs[primaryIndex].buttonPosition = TabPosition.fromIndex(primaryIndex, totalCount: orderedTabs.count)
                 orderedTabs[secondIndex].buttonPosition = TabPosition.fromIndex(secondIndex, totalCount: orderedTabs.count)
-                
+
                 temporarySelectedButtonIndex += secondIndex-primaryIndex
                 self.layoutTabButtons(orderedTabs, animated: true)
                 self.invalidateRestorableState()
@@ -394,7 +390,7 @@ open class TabsControl: NSControl, NSTextDelegate {
             }
         }
     }
-    
+
     // MARK: - Selection
 
     @objc fileprivate func selectTab(_ sender: AnyObject?) {
@@ -409,7 +405,7 @@ open class TabsControl: NSControl, NSTextDelegate {
             let target = self.target {
             NSApp.sendAction(action, to: target, from: self)
         }
-        
+
         NotificationCenter.default.post(name: Notification.Name(rawValue: TabsControlSelectionDidChangeNotification), object: self)
         self.delegate?.tabsControlDidChangeSelection?(self, item: button.representedObject!)
 
@@ -449,7 +445,7 @@ open class TabsControl: NSControl, NSTextDelegate {
     var selectedButtonIndex: Int? = nil {
         didSet {
             self.scrollToSelectedButton()
-            
+
             self.updateButtonStatesForSelection()
             self.layoutTabButtons(nil, animated: false)
             self.invalidateRestorableState()
@@ -457,10 +453,10 @@ open class TabsControl: NSControl, NSTextDelegate {
             NotificationCenter.default.post(name: Notification.Name(rawValue: TabsControlSelectionDidChangeNotification), object: self)
         }
     }
-    
+
     /**
      Select an item at a given index. Selecting an invalid index will unselected all tabs.
-     
+
      - parameter index: An integer indicating the index of the item to be selected.
      */
     open func selectItemAtIndex(_ index: Int) {
@@ -483,7 +479,7 @@ open class TabsControl: NSControl, NSTextDelegate {
 
     /// Starts editing the tab as if the user double-clicked on it. If `index` is out of bounds, it does nothing.
     open func editTabAtIndex(_ index: Int) {
-        
+
         guard let tabButton = self.tabButtons[safe: index] else { return }
 
         self.editTabButton(tabButton)
@@ -499,37 +495,37 @@ open class TabsControl: NSControl, NSTextDelegate {
             else { return }
 
         self.window?.makeFirstResponder(self)
-        
+
         self.editingTab = (tab.title, tab)
         tab.edit(fieldEditor: fieldEditor, delegate: self)
     }
-    
+
     // MARK : - NSTextDelegate
-    
+
     open func textDidEndEditing(_ notification: Notification) {
         guard let fieldEditor = notification.object as? NSText else {
             assertionFailure("Expected field editor.")
             return
         }
-        
+
         let newValue = fieldEditor.string ?? ""
         self.editingTab?.button.finishEditing(fieldEditor: fieldEditor, newValue: newValue)
         self.window?.makeFirstResponder(self)
-        
+
         defer {
             self.editingTab = nil
         }
-        
+
         guard let item = self.editingTab?.button.representedObject
             , newValue != self.editingTab?.title
             else { return }
-        
+
         self.delegate?.tabsControl?(self, setTitle: newValue, forItem: item)
         self.editingTab?.button.representedObject = self.dataSource?.tabsControl(self, itemAtIndex: self.selectedButtonIndex!)
     }
 
     // MARK: - Drawing
-    
+
     override open var isOpaque: Bool {
         return false
     }
@@ -537,15 +533,15 @@ open class TabsControl: NSControl, NSTextDelegate {
     override open var isFlipped: Bool {
         return true
     }
-    
+
     // MARK: - Tab Widths
-    
+
     open func currentTabWidth() -> CGFloat {
         let tabs = self.tabButtons
         guard let firstTab = tabs.first else { return 0.0 }
         return firstTab.frame.width
     }
-    
+
     // MARK: - State Restoration
 
     fileprivate enum RestorationKeys {
@@ -555,7 +551,7 @@ open class TabsControl: NSControl, NSTextDelegate {
 
     open override func encodeRestorableState(with coder: NSCoder) {
         super.encodeRestorableState(with: coder)
-        
+
         let scrollXOffset: CGFloat = self.scrollView.contentView.bounds.origin.x
         let selectedButtonIndex: Int = self.selectedButtonIndex ?? NSNotFound
 
@@ -565,10 +561,10 @@ open class TabsControl: NSControl, NSTextDelegate {
 
     open override func restoreState(with coder: NSCoder) {
         super.restoreState(with: coder)
-        
+
         let scrollXOffset = coder.decodeDouble(forKey: RestorationKeys.scrollXOffset)
         let selectedButtonIndex = coder.decodeInteger(forKey: RestorationKeys.selectedButtonIndex)
-        
+
         var bounds = self.scrollView.contentView.bounds
         bounds.origin.x = CGFloat(scrollXOffset)
         self.scrollView.contentView.bounds = bounds
@@ -579,9 +575,9 @@ open class TabsControl: NSControl, NSTextDelegate {
 
         self.selectTab(selectedButton)
     }
-    
+
     // MARK: - Helpers
-    
+
     fileprivate var tabButtons: [TabButton] {
         guard let tabsView = self.tabsView else { return [] }
         return tabsView.subviews.flatMap({ $0 as? TabButton }) // .sorted(by: { $0.frame.minX < $1.frame.minX})
